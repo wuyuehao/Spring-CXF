@@ -15,5 +15,11 @@ public interface DependencyRS {
 	@Produces({MediaType.APPLICATION_JSON})
 	public String inspect(@PathParam("class_name") String className,
 			@Context HttpServletResponse response);
+	
+	@GET
+	@Path("mapping/{id}")
+	@Produces({MediaType.APPLICATION_JSON})
+	public String read(@PathParam("id") String id,
+			@Context HttpServletResponse response);
 
 }

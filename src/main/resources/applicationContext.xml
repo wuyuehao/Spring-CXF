@@ -15,7 +15,7 @@
 	<bean id="testRS" class="com.tony.mapinspector.rest.FooBarWS" />
 	<bean id="dependencyRS" class="com.tony.mapinspector.rest.DependencyRSImpl" />
 	<bean id="jsonProvider" class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider" />
-	<jaxrs:server id="fooBarWs" address="/">
+	<jaxrs:server id="rest" address="/">
 		<jaxrs:serviceBeans>
 			<ref bean="dependencyRS" />
 			<ref bean="testRS" />

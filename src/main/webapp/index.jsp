@@ -16,14 +16,14 @@
 					<tr>
 						<td><input class="form-control" type="text" id="ltext"
 							value="com.paypal.api.platform.riskprofileapi.IdentityProfileDecisionRequest" /></td>
-						<td><button class="btn btn-info" id="bl" name="click">Get
-								Data</button></td>
 					</tr>
 				</table>
 			</div>
 			<div class="col-lg-2">
 				<p align="center">
-					<button class="btn btn-info" id="bm">Get Mapping</button>
+					<button class="btn btn-info" id="bl" name="click">Get Data</button>
+					<button class="btn btn-info" id="bm">Load Map</button>
+					<button class="btn btn-info" id="bm-save">Save Map</button>
 				</p>
 			</div>
 			<div class="col-lg-5">
@@ -31,8 +31,6 @@
 					<tr>
 						<td><input class="form-control" type="text" id="rtext"
 							value="com.paypal.riskprofilechanges.EvaluateIdentityProfileChangeRequest" /></td>
-						<td><button class="btn btn-info" id="br" name="click">Get
-								Data</button></td>
 					</tr>
 				</table>
 			</div>
@@ -58,37 +56,15 @@
 <script type="text/javascript">
 	var canvas = document.getElementById('canvas');
 	var context = canvas.getContext('2d');
-
-	$('#bm')
-			.click(
-					function() {
-
-						ajax("http://localhost:8080/rs/mapping/1", 'GET')
-								.done(function(ret) {
-									$.each(ret, function(i, o) {
-										var start = $('#canvas').offset().top;
-				                        canvas.height = $('#footer').offset().top;
-				                        alert(o.key);
-				                        alert(o.value);
-				                        context.beginPath();
-				                        context.moveTo(0, $("span:contains('"+o.key+"')")
-				                                .offset().top
-				                                - start);
-				                        context.lineTo(canvas.width, $(
-				                                "span:contains('"+o.value+"')")
-				                                .offset().top
-				                                - start);
-				                        context.stroke();
-									});
-								});
-						
-					});
+	$('#bm-save').click(function() {
+		
+	});
+	$('#bm').click(function() {
+		read_map($('#ltext').val(), $('#rtext').val());
+	});
 
 	$('#bl').click(function() {
 		call($('#ltext').val(), '#ltree');
-	});
-
-	$('#br').click(function() {
 		call($('#rtext').val(), '#rtree');
 	});
 
@@ -113,6 +89,28 @@
 				function(ret) {
 					$(view).treeview({
 						data : ret
+					});
+				});
+
+	}
+	function read_map(classname1, classname2) {
+		ajax(
+				"http://localhost:8080/rs/mapping/" + classname1 + "|"
+						+ classname2, 'GET').done(
+				function(ret) {
+					var start = $('#canvas').offset().top;
+                    canvas.height = $('#footer').offset().top;
+                    context.beginPath();
+					$.each(ret.pairs, function(i, o) {
+						context.moveTo(0, $("span:contains('" + o.key + "')")
+								.offset().top
+								- start);
+						context
+								.lineTo(canvas.width, $(
+										"span:contains('" + o.value + "')")
+										.offset().top
+										- start);
+						context.stroke();
 					});
 				});
 

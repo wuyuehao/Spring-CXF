@@ -67,18 +67,5 @@ public class DependencyRSImpl implements DependencyRS {
 		}
 	}
 
-	public String read(String id, HttpServletResponse response) {
-		JSONArray array = new JSONArray();
-		JSONObject obj = new JSONObject();
-		try {
-			obj.put("key", "Address.City");
-			obj.put("value", "ProfileData.SessionVo");
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		array.put(obj);
-		return array.toString();
-	}
 
 }

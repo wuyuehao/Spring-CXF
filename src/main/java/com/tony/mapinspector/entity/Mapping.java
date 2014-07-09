@@ -1,13 +1,17 @@
 package com.tony.mapinspector.entity;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 
 @Entity
 public class Mapping implements Serializable {
@@ -19,17 +23,46 @@ public class Mapping implements Serializable {
 	@Column(name = "id")
 	private Long id;
 
-	private String uid;
+	private String fromClass;
+	
+	private String toClass;
+	
+	private Date lastUpdated;
 
-	public String getUid() {
-		return uid;
+	public Date getLastUpdated() {
+		return lastUpdated;
 	}
 
-	public void setUid(String uid) {
-		this.uid = uid;
+	public void setLastUpdated(Date lastUpdated) {
+		this.lastUpdated = lastUpdated;
 	}
 
-	private ArrayList<Pair> pairs;
+	public String getFromClass() {
+		return fromClass;
+	}
+
+	public void setFromClass(String fromClass) {
+		this.fromClass = fromClass;
+	}
+
+	public String getToClass() {
+		return toClass;
+	}
+
+	public void setToClass(String toClass) {
+		this.toClass = toClass;
+	}
+
+	@OneToMany(cascade=CascadeType.ALL, fetch = FetchType.EAGER)
+	private List<Pair> pairs;
+
+	public List<Pair> getPairs() {
+		return pairs;
+	}
+
+	public void setPairs(List<Pair> pairs) {
+		this.pairs = pairs;
+	}
 
 	public Long getId() {
 		return id;
@@ -37,14 +70,6 @@ public class Mapping implements Serializable {
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public ArrayList<Pair> getPairs() {
-		return pairs;
-	}
-
-	public void setPairs(ArrayList<Pair> pairs) {
-		this.pairs = pairs;
 	}
 
 }

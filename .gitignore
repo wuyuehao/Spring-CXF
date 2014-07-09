@@ -3,7 +3,7 @@
 .project
 *.class
 target/
-
+*.log
 # Package Files #
 *.jar
 *.war

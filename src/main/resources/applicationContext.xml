@@ -17,11 +17,13 @@
     <context:property-placeholder location="classpath*:WEB-INF/*.properties" />
 	<bean id="dependencyRS" class="com.tony.mapinspector.rest.DependencyRSImpl" />
 	<bean id="mappingRS" class="com.tony.mapinspector.rest.MappingManagerImpl" />
+	<bean id="codeGenRS" class="com.tony.mapinspector.rest.CodeGen" />
 	<bean id="jsonProvider" class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider" />
 	<jaxrs:server id="rest" address="/">
 		<jaxrs:serviceBeans>
 			<ref bean="dependencyRS" />
 			<ref bean="mappingRS" />
+			<ref bean="codeGenRS" />
 		</jaxrs:serviceBeans>
 		<jaxrs:providers>
 			<ref bean="jsonProvider" />

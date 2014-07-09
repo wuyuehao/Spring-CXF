@@ -10,13 +10,14 @@ import javax.persistence.Id;
 
 @Entity
 public class Pair implements Serializable{
-	private static final long serialVersionUID = 3469863856343038995L;
+	
+	private static final long serialVersionUID = -6279265576765240129L;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	@Column(name = "id")
 	private Long id;
-
+	
 	public Long getId() {
 		return id;
 	}
@@ -25,24 +26,46 @@ public class Pair implements Serializable{
 		this.id = id;
 	}
 
-	private String key;
+	private String name;
+	
+	private String type;
+	
+	private String toName;
+	
+	private String toType;
 
-	private String value;
-
-	public String getKey() {
-		return key;
+	public String getName() {
+		return name;
 	}
 
-	public void setKey(String key) {
-		this.key = key;
+	public void setName(String name) {
+		this.name = name;
 	}
 
-	public String getValue() {
-		return value;
+	public String getType() {
+		return type;
 	}
 
-	public void setValue(String value) {
-		this.value = value;
+	public void setType(String type) {
+		this.type = type;
 	}
+
+	public String getToName() {
+		return toName;
+	}
+
+	public void setToName(String toName) {
+		this.toName = toName;
+	}
+
+	public String getToType() {
+		return toType;
+	}
+
+	public void setToType(String toType) {
+		this.toType = toType;
+	}
+	
+	
 
 }

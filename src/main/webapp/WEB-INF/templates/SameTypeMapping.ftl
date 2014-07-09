@@ -1,0 +1,1 @@
+    ${toClassVarName}.${toClassSetMethodName}(${varName});

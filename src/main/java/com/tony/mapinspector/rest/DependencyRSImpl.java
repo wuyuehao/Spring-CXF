@@ -2,22 +2,27 @@ package com.tony.mapinspector.rest;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
 
+import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.paypal.vo.VOEnum;
+import com.tony.mapinspector.dao.MappingDao;
+import com.tony.mapinspector.entity.Mapping;
+import com.tony.mapinspector.entity.Pair;
 
 public class DependencyRSImpl implements DependencyRS {
 
 	private static String[] colors = new String[] { "#FFFFFF", "#FFFF99",
 			"#FFCC33", "#CCFF33", "#66CCFF", "#3333FF", "#CC00FF" };
+
+	private static Logger log = Logger.getLogger(DependencyRSImpl.class);
 
 	public String inspect(String className, HttpServletResponse response) {
 		Class c = null;
@@ -67,5 +72,104 @@ public class DependencyRSImpl implements DependencyRS {
 		}
 	}
 
+	@Autowired
+	private MappingDao mappingDao;
+
+	private Mapping mapping = null;
+
+	public String read(String className, Long mapId,
+			HttpServletResponse response) {
+		if (mapId == 0) {
+			List<Mapping> mappings = mappingDao.findAllByFromClass(className);
+			for (Mapping m : mappings) {
+				mapId = Math.max(mapId, m.getId());
+			}
+		}
+		if (mapId == 0) {
+			List<Mapping> mappings = mappingDao.findAllByToClass(className);
+			for (Mapping m : mappings) {
+				mapId = Math.max(mapId, m.getId());
+			}
+		}
+
+		mapping = mappingDao.getOne(mapId);
+
+		JSONObject obj = new JSONObject();
+		if (mapping != null) {
+			try {
+				obj.put("to_class", mapping.getToClass());
+				obj.put("from_class", mapping.getFromClass());
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		Class c = null;
+		try {
+			c = Class.forName(className);
+		} catch (ClassNotFoundException e) {
+			return "class not found";
+		}
+
+		JSONArray array = new JSONArray();
+		try {
+			traverse2(c, array, 0, "");
+			obj.put("mapping", array);
+		} catch (JSONException e) {
+			return e.getMessage();
+		}
+		return obj.toString();
+	}
+
+	private void traverse2(Class c, JSONArray array, int dep, String prefix)
+			throws JSONException {
+
+		HashMap<String, Method> uniqueMethods = new HashMap<String, Method>();
+
+		for (Method m : c.getMethods()) {
+			if (m.getName().startsWith("set") && m.getName().length() > 3) {
+				if (uniqueMethods.containsKey(m.getName())) {
+					if (uniqueMethods.get(m.getName()).getParameterTypes()[0]
+							.getName().startsWith("java.")) {
+						log.debug("visited_replaced="
+								+ m.getName()
+								+ ", type="
+								+ uniqueMethods.get(m.getName())
+										.getParameterTypes()[0].getName()
+								+ "->" + m.getParameterTypes()[0].getName());
+						uniqueMethods.put(m.getName(), m);
+					}
+				} else {
+					uniqueMethods.put(m.getName(), m);
+				}
+			}
+		}
+		for (Method method : uniqueMethods.values()) {
+			String name = method.getName();
+			Class parameter = method.getParameterTypes()[0];
+			JSONObject o = new JSONObject();
+			name = name.substring(3);
+			String type = parameter.getName();
+			String tag = dep > 0 ? prefix + "." + name : name;
+			o.put("name", tag);
+			o.put("type", type);
+			if (mapping != null) {
+
+				List<Pair> list = mapping.getPairs();
+
+				for (Pair p : list) {
+					if (p.getName().equals(tag)) {
+						o.put("mapto", p.getToName());
+					}
+					if (p.getToName().equals(tag)) {
+						o.put("mapto", p.getName());
+					}
+				}
+			}
+			array.put(o);
+			if (parameter.getName().startsWith("com.paypal")) {
+				traverse2(parameter, array, dep + 1, tag);
+			}
+		}
+	}
 
 }

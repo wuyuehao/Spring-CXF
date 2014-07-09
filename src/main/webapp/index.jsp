@@ -1,118 +1,111 @@
-<html>
+<html ng-app="myApp" >
 
-<!-- Required Stylesheets -->
-<link href="./css/bootstrap.css" rel="stylesheet">
-
-<!-- Required Javascript -->
-<script src="./js/jquery-2.1.1.js"></script>
-<script src="./js/bootstrap-treeview.min.js"></script>
+  <head>
+	<!-- Required Stylesheets -->
+	<link href="./css/bootstrap.css" rel="stylesheet">
+	<!-- Required Javascript -->
+	<script src="./js/angular.min.js"></script>
+	<script src="./js/ui-bootstrap-tpls-0.11.0.min.js"></script>
+	<script src="./js/app.js"></script>
+  </head>
 
 <body>
+<div ng-controller="mapCtrl">
+    <script type="text/ng-template" id="myModalContent.html">
+        <div class="modal-header">
+            <h3 class="modal-title">Generated Code:</h3>
+        </div>
+        <div class="modal-body">
+            <div class="well">{{gencode}}
+</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" ng-click="ok()">OK</button>
+            <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+        </div>
+    </script>
+</div>
 	<h2>PPaas-ASF Mapping Viewer</h2>
-	<div class="container-fluid">
+	<div class="container-fluid" ng-controller="mapCtrl">
 		<div class="row">
 			<div class="col-lg-5">
 				<table width="100%">
 					<tr>
+						<td>From:</td>
 						<td><input class="form-control" type="text" id="ltext"
-							value="com.paypal.api.platform.riskprofileapi.IdentityProfileDecisionRequest" /></td>
+							value="{{from_class}}" /></td>
 					</tr>
 				</table>
 			</div>
-			<div class="col-lg-2">
+			<div class="col-lg-3">
 				<p align="center">
-					<button class="btn btn-info" id="bl" name="click">Get Data</button>
-					<button class="btn btn-info" id="bm">Load Map</button>
-					<button class="btn btn-info" id="bm-save">Save Map</button>
+					<button class="btn btn-info" ng-click="getData()">Get Data</button>
+					<select ng-model="currentMap"
+						ng-options="map.id for map in mappings"></select>
+					<button class="btn btn-info" ng-click="loadMap()">Load Map</button>
+					<button class="btn btn-info" ng-click="genCode()">
+						<span class="glyphicon glyphicon-export"></span>Gen Code
+					</button>
 				</p>
 			</div>
-			<div class="col-lg-5">
+			<div class="col-lg-4">
 				<table width="100%">
 					<tr>
-						<td><input class="form-control" type="text" id="rtext"
-							value="com.paypal.riskprofilechanges.EvaluateIdentityProfileChangeRequest" /></td>
+						<td>To:</td>
+						<td>
+							<p class="form-control-static">{{to_class}}</p>
+						</td>
 					</tr>
 				</table>
 			</div>
+			
 		</div>
 
 		<div class="row">
-			<div class="col-lg-5">
-				<div id="ltree"></div>
+			<div class="col-lg-6">
+				<div id="ltree">
+					Filter: <input class="form-control" ng-model="searchText">
+					<table class="table table-condensed table-striped table-hover"
+						style="table-layout: fixed;" id="ltable">
+						<tr>
+							<th style="width: 90%">Name</th>
+							<th style="width: 10%">Status</th>
+						</tr>
+						<tr ng-click="setSelected()" class="{{item.highlight_class}}"
+							ng-repeat="item in mapping | filter:searchText">
+							<td title="Type: {{item.type}}">{{item.name}}</td>
+							<td title="Linked To: {{item.mapto}}"><span
+								class="label {{item.link_class}}">{{item.link}}</span></td>
+						</tr>
+					</table>
+				</div>
 			</div>
-			<div class="col-lg-2">
-				<canvas id="canvas" width="300" height="200"> 
-                    Fallback content, in case the browser does not support Canvas. 
-                </canvas>
-			</div>
-			<div class="col-lg-5">
-				<div id="rtree"></div>
+			<div class="col-lg-6">
+			Filter: 
+				<table width="100%">
+				<tr>
+				    <td width="90%"><input class="form-control" ng-model="searchTextRight"></td>
+				    <td width="10%" align="right"><button class="{{guessClass}}" ng-click="guessOnOff()">{{guessStatus}}</button></td>
+				    </tr></table>
+				<table class="table table-condensed table-striped table-hover"
+					style="table-layout: fixed;" id="rtable">
+					<tr>
+						<th style="width: 80%">Name</th>
+						<th style="width: 10%">Status</th>
+						<th style="width: 10%">Action</th>
+					</tr>
+					<tr ng-click="setSelectedRight()" class="{{item.highlight_class}}"
+						ng-repeat="item in mappingRight | filter:searchTextRight">
+						<td title="Type: {{item.type}}, Mapto: {{item.mapto}}">{{item.name}}</td>
+						<td title="Linked To: {{item.mapto}}"><span
+							class="label {{item.link_class}}">{{item.link}}</span></td>
+						<td title="Type: {{item.type}}, Mapto: {{item.mapto}}"><button
+								ng-click="link()" class="btn {{item.action_class}}">{{item.action}}</button></td>
+					</tr>
+				</table>
 			</div>
 		</div>
 	</div>
 </body>
 <footer id="footer"></footer>
 </html>
-<script type="text/javascript">
-	var canvas = document.getElementById('canvas');
-	var context = canvas.getContext('2d');
-	$('#bm-save').click(function() {
-		
-	});
-	$('#bm').click(function() {
-		read_map($('#ltext').val(), $('#rtext').val());
-	});
-
-	$('#bl').click(function() {
-		call($('#ltext').val(), '#ltree');
-		call($('#rtext').val(), '#rtree');
-	});
-
-	function ajax(uri, method, data) {
-		var request = {
-			url : uri,
-			type : method,
-			contentType : "application/json",
-			accepts : "application/json",
-			cache : false,
-			dataType : 'json',
-			data : JSON.stringify(data),
-			error : function(jqXHR) {
-				console.log("ajax error " + jqXHR.status);
-			}
-		};
-		return $.ajax(request);
-	}
-
-	function call(classname, view) {
-		ajax("http://localhost:8080/rs/inspector/" + classname, 'GET').done(
-				function(ret) {
-					$(view).treeview({
-						data : ret
-					});
-				});
-
-	}
-	function read_map(classname1, classname2) {
-		ajax(
-				"http://localhost:8080/rs/mapping/" + classname1 + "|"
-						+ classname2, 'GET').done(
-				function(ret) {
-					var start = $('#canvas').offset().top;
-                    canvas.height = $('#footer').offset().top;
-                    context.beginPath();
-					$.each(ret.pairs, function(i, o) {
-						context.moveTo(0, $("span:contains('" + o.key + "')")
-								.offset().top
-								- start);
-						context
-								.lineTo(canvas.width, $(
-										"span:contains('" + o.value + "')")
-										.offset().top
-										- start);
-						context.stroke();
-					});
-				});
-
-	}
-</script>

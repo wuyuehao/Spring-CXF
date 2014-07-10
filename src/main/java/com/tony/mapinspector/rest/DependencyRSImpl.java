@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.ebay.af.common.types.Currency;
 import com.paypal.vo.VOEnum;
 import com.tony.mapinspector.dao.MappingDao;
 import com.tony.mapinspector.entity.Mapping;
@@ -126,7 +127,7 @@ public class DependencyRSImpl implements DependencyRS {
 		HashMap<String, Method> uniqueMethods = new HashMap<String, Method>();
 
 		for (Method m : c.getMethods()) {
-			if (m.getName().startsWith("set") && m.getName().length() > 3) {
+			if (m.getName().startsWith("set") && m.getName().length() > 3 && !m.getName().equals("setAdditionalProperties")) {
 				if (uniqueMethods.containsKey(m.getName())) {
 					if (uniqueMethods.get(m.getName()).getParameterTypes()[0]
 							.getName().startsWith("java.")) {
@@ -166,7 +167,7 @@ public class DependencyRSImpl implements DependencyRS {
 				}
 			}
 			array.put(o);
-			if (parameter.getName().startsWith("com.paypal")) {
+			if (parameter.getName().startsWith("com.paypal") && !parameter.getName().endsWith("Currency")) { // skip Currency internals.
 				traverse2(parameter, array, dep + 1, tag);
 			}
 		}

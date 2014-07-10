@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,11 +20,13 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.tony.mapinspector.dao.MappingDao;
 import com.tony.mapinspector.entity.Mapping;
 import com.tony.mapinspector.entity.Pair;
 
+import edu.emory.mathcs.backport.java.util.Arrays;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
@@ -100,7 +103,7 @@ public class CodeGen {
 		mapperModel.put("toClassName", getSimpleName(toClass));
 		mapperModel.put("toClassVarName", getVarName(getSimpleName(toClass)));
 		mapperModel.put("fromClassVarName", getVarName(getSimpleName(fromClass)));
-		mapperModel.put("package", "pkg");
+		mapperModel.put("package", props.get("package"));
 		
 		out = new StringWriter();
 		
@@ -129,14 +132,24 @@ public class CodeGen {
 
 	}
 
+	private class MethodComparator implements Comparator<Method>{
+
+		public int compare(Method m1, Method m2) {
+			return m1.getName().compareTo(m2.getName());
+		}
+		
+	}
 	private void mapMethods(Class clazz, HashMap<String, Pair> pairs,
 			Configuration cfg, StringWriter out, String key, String toClass) {
 
 		Method[] methods = clazz.getMethods();
+		
+		Arrays.sort(methods, new MethodComparator());
+		
 		for (Method m : methods) {
 			String name = m.getName();
 			Class type = m.getReturnType();
-			if (name.startsWith("get") && name.length() > 3 && !name.equals("getClass")) {
+			if (name.startsWith("get") && name.length() > 3 && !name.equals("getClass") && !name.equals("getAdditionalProperties")) {
 				String className = type.getCanonicalName();
 				String varName = getVarName(name.substring(3));
 				varName = handleDups(varNames, varName);
@@ -176,11 +189,18 @@ public class CodeGen {
 							mappingTemp = "String2ByteMapping.ftl";
 						}else if(isFromEnum){
 							mappingTemp = "Enum2StringMapping.ftl";
+						}else if(toType.equals("com.paypal.types.Currency") && fromType.equals("com.paypal.api.platform.riskprofileapi.Currency")){
+							mappingTemp = "Currency2CurrencyMapping.ftl";
+						}else if(toType.equals("java.lang.Long") && fromType.equals("java.lang.Integer")){
+							mappingTemp = "Integer2LongMapping.ftl";
+						}else if(toType.equals("java.lang.Long") && fromType.equals("java.lang.String")){
+							mappingTemp = "String2LongMapping.ftl";
 						}else{
 							log.error("No Mapping Templates for : " + fromType + "->" +toType);
 						}
 					}
-					String toClassVarName = getVarName(getParentName(toName, toClass));
+					String toClassVarName = getVarName(toClass) + "VO";
+					toClassVarName = handleSpecialCase(toClassVarName);
 					map.put("toClassVarName", toClassVarName);
 					map.put("parameterName", toType);
 					map.put("toClassSetMethodName", getSetterNameFromId(toName));
@@ -190,7 +210,7 @@ public class CodeGen {
 					for(String s : set){
 						if(s.startsWith(myKey)){
 							// recursive if there is children in mapping table
-							mapMethods(m.getReturnType(), pairs, cfg, out, myKey, toClass);
+							mapMethods(m.getReturnType(), pairs, cfg, out, myKey, varName);
 							break;
 						}
 					}
@@ -199,6 +219,24 @@ public class CodeGen {
 
 			}
 		}
+	}
+	
+	@Autowired
+	@Qualifier("codeGenProps")
+	private HashMap<String, String> props;
+
+	private String handleSpecialCase(String name) {
+		if(props.containsKey(name)){
+			return props.get(name);
+		}
+		return name;
+	}
+
+	private String normalizeVOName(String name) {
+		if(!name.endsWith("VO")){
+			name+="VO";
+		}
+		return getVarName(name);
 	}
 
 	private String getParentName(String toName, String defaultName) {
@@ -259,6 +297,7 @@ public class CodeGen {
 		while (!curr.isEmpty()) {
 			Class c = curr.poll();
 			Method[] methods = c.getMethods();
+			Arrays.sort(methods, new MethodComparator());
 			for (Method m : methods) {
 				String name = m.getName();
 				if (name.startsWith("set") && name.length() > 3) {
@@ -266,9 +305,9 @@ public class CodeGen {
 					if (parameter.getName().endsWith("VO")) {
 
 						String className = parameter.getName();
-						String varName = getVarName(parameter.getSimpleName());
+						String varName = normalizeVOName(parameter.getSimpleName());
 						varName = handleDups(varNames, varName);
-						String parentVarName = getVarName(c.getSimpleName());
+						String parentVarName = normalizeVOName(c.getSimpleName());
 						String setMethodName = name;
 
 						HashMap<String, String> map = new HashMap<String, String>();

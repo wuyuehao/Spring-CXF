@@ -13,8 +13,11 @@
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
       http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd">
 	<mvc:default-servlet-handler />
+	<import resource="properties.xml"/>
+	
 	<context:component-scan base-package="com" />
-    <context:property-placeholder location="classpath*:WEB-INF/*.properties" />
+	<context:property-placeholder location="classpath*:WEB-INF/*.properties" />
+
 	<bean id="dependencyRS" class="com.tony.mapinspector.rest.DependencyRSImpl" />
 	<bean id="mappingRS" class="com.tony.mapinspector.rest.MappingManagerImpl" />
 	<bean id="codeGenRS" class="com.tony.mapinspector.rest.CodeGen" />
@@ -50,9 +53,9 @@
 		<property name="validationQuery" value="SELECT 1" />
 	</bean>
 	<bean class="org.springframework.orm.jpa.JpaTransactionManager"
-        id="transactionManager">
-        <property name="entityManagerFactory" ref="entityManagerFactory" />
-    </bean>
+		id="transactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory" />
+	</bean>
 	<bean
 		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
 		id="entityManagerFactory">

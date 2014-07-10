@@ -17,6 +17,7 @@
 		<constructor-arg>
 			<map>
 				<entry key="package" value="com.paypal.services.rs.riskprofile.gen" />
+				<entry key="identityProfileDecisionRequestVO" value="evaluateIdentityProfileChangeRequestVO" />
 				<entry key="historyPermissionsVO" value="hPInputVO" />
 				<entry key="accountLimitsVO" value="accountLimitsCountersVO" />
 				<entry key="accountFinVO" value="accountFinancialInstVO" />

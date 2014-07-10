@@ -11,13 +11,13 @@ import ${toClass};
 public class ${fromClassName}MapperGen{
 
     public ${toClassName} map(${fromClassName} ${fromClassVarName}){
-        ${toClassName} ${toClassVarName}VO = new ${toClassName}();
+        ${toClassName} ${toClassVarName} = new ${toClassName}();
         
         ${nestedObjects}
         
         ${mappingMethods}
         
-        return ${toClassVarName}VO;
+        return ${toClassVarName};
     }
     
     private Currency getCurrency(

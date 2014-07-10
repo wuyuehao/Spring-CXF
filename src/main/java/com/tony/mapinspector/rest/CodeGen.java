@@ -39,16 +39,17 @@ public class CodeGen {
 	@Autowired
 	MappingDao mappingDao;
 	HashSet<String> varNames = new HashSet<String>();
-	
+
 	private Logger log = Logger.getLogger(CodeGen.class);
+
 	@GET
 	@Path("codegen/{map_id}")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String gen(@PathParam("map_id") Long id,
 			@Context ServletContext context) {
-		
+
 		varNames.clear(); // clear name spaces for every single call
-		
+
 		// freemarker init
 		Configuration cfg = new Configuration();
 		cfg.setServletContextForTemplateLoading(context, "WEB-INF/templates");
@@ -94,19 +95,22 @@ public class CodeGen {
 		}
 
 		StringWriter out = new StringWriter();
-		mapMethods(fromClazz, map, cfg, out, "", clazz.getSimpleName());
-		mapperModel.put("mappingMethods", out.getBuffer().toString());
+		mapMethods(fromClazz, map, cfg, out, "", getVarName(fromClazz.getSimpleName()));
 		
+		
+		mapperModel.put("mappingMethods", out.getBuffer().toString());
+
 		mapperModel.put("fromClass", fromClass);
 		mapperModel.put("toClass", toClass);
 		mapperModel.put("fromClassName", getSimpleName(fromClass));
 		mapperModel.put("toClassName", getSimpleName(toClass));
-		mapperModel.put("toClassVarName", getVarName(getSimpleName(toClass)));
-		mapperModel.put("fromClassVarName", getVarName(getSimpleName(fromClass)));
+		mapperModel.put("toClassVarName", getVarName(getSimpleName(toClass))+"VO");
+		mapperModel.put("fromClassVarName",
+				getVarName(getSimpleName(fromClass)));
 		mapperModel.put("package", props.get("package"));
-		
+
 		out = new StringWriter();
-		
+
 		write(cfg, out, mapperModel, "mapper.ftl");
 
 		/*
@@ -132,28 +136,31 @@ public class CodeGen {
 
 	}
 
-	private class MethodComparator implements Comparator<Method>{
+	private class MethodComparator implements Comparator<Method> {
 
 		public int compare(Method m1, Method m2) {
 			return m1.getName().compareTo(m2.getName());
 		}
-		
+
 	}
+
 	private void mapMethods(Class clazz, HashMap<String, Pair> pairs,
-			Configuration cfg, StringWriter out, String key, String toClass) {
+			Configuration cfg, StringWriter out, String key, String parentName) {
 
 		Method[] methods = clazz.getMethods();
-		
+
 		Arrays.sort(methods, new MethodComparator());
-		
+
 		for (Method m : methods) {
 			String name = m.getName();
 			Class type = m.getReturnType();
-			if (name.startsWith("get") && name.length() > 3 && !name.equals("getClass") && !name.equals("getAdditionalProperties")) {
+			if (name.startsWith("get") && name.length() > 3
+					&& !name.equals("getClass")
+					&& !name.equals("getAdditionalProperties")) {
 				String className = type.getCanonicalName();
 				String varName = getVarName(name.substring(3));
 				varName = handleDups(varNames, varName);
-				String parentVarName = getVarName(clazz.getSimpleName());
+				String parentVarName = parentName;
 				String getMethodName = name;
 
 				HashMap<String, String> map = new HashMap<String, String>();
@@ -164,8 +171,9 @@ public class CodeGen {
 
 				String tempFile = "defineInput.ftl";
 				write(cfg, out, map, tempFile);
-				String myKey = key.length() == 0? name.substring(3) : key + "." + name.substring(3);
-				if(pairs.containsKey(myKey)){
+				String myKey = key.length() == 0 ? name.substring(3) : key
+						+ "." + name.substring(3);
+				if (pairs.containsKey(myKey)) {
 					// map and return;
 					Pair p = pairs.get(myKey);
 					String mappingTemp = "SameTypeMapping.ftl";
@@ -179,38 +187,47 @@ public class CodeGen {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					
-					if(!fromType.equals(toType)){
-						if(fromType.equals("java.util.Date") && toType.equals("java.lang.Long")){
+
+					if (!fromType.equals(toType)) {
+						if (fromType.equals("java.util.Date")
+								&& toType.equals("java.lang.Long")) {
 							mappingTemp = "Date2LongMapping.ftl";
-						}else if(toType.equals("java.math.BigInteger") && fromType.equals("java.lang.String")){
+						} else if (toType.equals("java.math.BigInteger")
+								&& fromType.equals("java.lang.String")) {
 							mappingTemp = "String2BigIntegerMapping.ftl";
-						}else if(toType.equals("java.lang.Byte") && fromType.equals("java.lang.String")){
+						} else if (toType.equals("java.lang.Byte")
+								&& fromType.equals("java.lang.String")) {
 							mappingTemp = "String2ByteMapping.ftl";
-						}else if(isFromEnum){
+						} else if (isFromEnum) {
 							mappingTemp = "Enum2StringMapping.ftl";
-						}else if(toType.equals("com.paypal.types.Currency") && fromType.equals("com.paypal.api.platform.riskprofileapi.Currency")){
+						} else if (toType.equals("com.paypal.types.Currency")
+								&& fromType
+										.equals("com.paypal.api.platform.riskprofileapi.Currency")) {
 							mappingTemp = "Currency2CurrencyMapping.ftl";
-						}else if(toType.equals("java.lang.Long") && fromType.equals("java.lang.Integer")){
+						} else if (toType.equals("java.lang.Long")
+								&& fromType.equals("java.lang.Integer")) {
 							mappingTemp = "Integer2LongMapping.ftl";
-						}else if(toType.equals("java.lang.Long") && fromType.equals("java.lang.String")){
+						} else if (toType.equals("java.lang.Long")
+								&& fromType.equals("java.lang.String")) {
 							mappingTemp = "String2LongMapping.ftl";
-						}else{
-							log.error("No Mapping Templates for : " + fromType + "->" +toType);
+						} else {
+							log.error("No Mapping Templates for : " + fromType
+									+ "->" + toType);
 						}
 					}
-					String toClassVarName = getVarName(toClass) + "VO";
+					String toClassVarName = normalizeVOName(parentName);
 					toClassVarName = handleSpecialCase(toClassVarName);
 					map.put("toClassVarName", toClassVarName);
 					map.put("parameterName", toType);
 					map.put("toClassSetMethodName", getSetterNameFromId(toName));
 					write(cfg, out, map, mappingTemp);
-				}else{
+				} else {
 					Set<String> set = pairs.keySet();
-					for(String s : set){
-						if(s.startsWith(myKey)){
+					for (String s : set) {
+						if (s.startsWith(myKey)) {
 							// recursive if there is children in mapping table
-							mapMethods(m.getReturnType(), pairs, cfg, out, myKey, varName);
+							mapMethods(m.getReturnType(), pairs, cfg, out,
+									myKey, varName);
 							break;
 						}
 					}
@@ -220,47 +237,58 @@ public class CodeGen {
 			}
 		}
 	}
-	
+
 	@Autowired
 	@Qualifier("codeGenProps")
 	private HashMap<String, String> props;
 
 	private String handleSpecialCase(String name) {
-		if(props.containsKey(name)){
+		if (props.containsKey(name)) {
 			return props.get(name);
 		}
 		return name;
 	}
 
 	private String normalizeVOName(String name) {
-		if(!name.endsWith("VO")){
-			name+="VO";
+		int count = 0;
+		while (name.endsWith("_")) {
+			name = name.substring(0, name.length() - 1);
+			count++;
+		}
+		if (!name.endsWith("VO")) {
+			name += "VO";
+		}
+		while (count-- > 0) {
+			name += "_";
 		}
 		return getVarName(name);
 	}
 
 	private String getParentName(String toName, String defaultName) {
-		if(!toName.contains(".")){
+		if (!toName.contains(".")) {
 			return defaultName;
 		}
 		toName = toName.substring(0, toName.lastIndexOf('.'));
-		if(!toName.contains(".")) return toName + "VO";
-		return toName.substring(toName.lastIndexOf('.')+1) + "VO";
+		if (!toName.contains("."))
+			return toName + "VO";
+		return toName.substring(toName.lastIndexOf('.') + 1) + "VO";
 	}
 
 	private String getSetterNameFromId(String toName) {
-		if(!toName.contains(".")) return "set" + toName;
+		if (!toName.contains("."))
+			return "set" + toName;
 		int index = toName.lastIndexOf(".");
-		String setter = toName.substring(index+1);
+		String setter = toName.substring(index + 1);
 		setter = "set" + setter;
 		return setter;
 	}
 
 	private String getGetterNameFromId(String toName) {
-		if(!toName.contains(".")) return "get" + toName;
+		if (!toName.contains("."))
+			return "get" + toName;
 		int index = toName.lastIndexOf(".");
-		String getter = toName.substring(0,index);
-		String setter = toName.substring(index+1);
+		String getter = toName.substring(0, index);
+		String setter = toName.substring(index + 1);
 		getter = "get" + getter.replaceAll("\\.", "().get");
 		setter = "set" + setter;
 		return getter + "." + setter;
@@ -305,9 +333,11 @@ public class CodeGen {
 					if (parameter.getName().endsWith("VO")) {
 
 						String className = parameter.getName();
-						String varName = normalizeVOName(parameter.getSimpleName());
+						String varName = normalizeVOName(parameter
+								.getSimpleName());
 						varName = handleDups(varNames, varName);
-						String parentVarName = normalizeVOName(c.getSimpleName());
+						String parentVarName = normalizeVOName(c
+								.getSimpleName());
 						String setMethodName = name;
 
 						HashMap<String, String> map = new HashMap<String, String>();
@@ -332,9 +362,9 @@ public class CodeGen {
 	}
 
 	private String handleDups(HashSet<String> varNames, String varName) {
-		while(varNames.contains(varName)){
-			log.debug("Found a dup name: "+ varName);
-			varName+="_";
+		while (varNames.contains(varName)) {
+			log.debug("Found a dup name: " + varName);
+			varName += "_";
 		}
 		varNames.add(varName);
 		return varName;

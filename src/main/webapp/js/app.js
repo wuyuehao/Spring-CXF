@@ -84,6 +84,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 		if (!id) {
 			id = 0;
 		}
+		console.log('/rs/inspector/data/'+$scope.from_class + "?map_id=" + id);
 		var httpRequest = $http({
 			method : 'GET',
 			url : '/rs/inspector/data/' + $scope.from_class + "?map_id=" + id,
@@ -178,6 +179,19 @@ function mapCtrl($scope, $modal, $http, $log) {
 
 	$scope.genCode = function() {
 		var url = '/rs/codegen/' + $scope.currentMap.id;
+		var httpRequest = $http({
+			method : 'GET',
+			url : url,
+			contentType : "application/json",
+			accepts : "application/json",
+			data : $scope.mapping
+		}).success(function(data, status) {
+			$scope.open('lg', data);
+		});
+	};
+	
+	$scope.genTest = function() {
+		var url = '/rs/testgen/' + $scope.currentMap.id;
 		var httpRequest = $http({
 			method : 'GET',
 			url : url,

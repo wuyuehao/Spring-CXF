@@ -21,6 +21,8 @@
 				<entry key="historyPermissionsVO" value="hPInputVO" />
 				<entry key="accountLimitsVO" value="accountLimitsCountersVO" />
 				<entry key="accountFinVO" value="accountFinancialInstVO" />
+				<entry key="emailChangedVO" value="emailVO" />
+				<entry key="primaryEmailVO" value="emailVO_" />
 			</map>
 		</constructor-arg>
 	</bean>

@@ -2,6 +2,8 @@ package com.tony.mapinspector.entity;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -24,10 +26,20 @@ public class Mapping implements Serializable {
 	private Long id;
 
 	private String fromClass;
-	
+
 	private String toClass;
-	
+
 	private Date lastUpdated;
+
+	private HashMap<String, String> varNames = new HashMap<String, String>();
+
+	public HashMap<String, String> getVarNames() {
+		return varNames;
+	}
+
+	public void setVarNames(HashMap<String, String> varNames) {
+		this.varNames = varNames;
+	}
 
 	public Date getLastUpdated() {
 		return lastUpdated;
@@ -53,7 +65,7 @@ public class Mapping implements Serializable {
 		this.toClass = toClass;
 	}
 
-	@OneToMany(cascade=CascadeType.ALL, fetch = FetchType.EAGER)
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	private List<Pair> pairs;
 
 	public List<Pair> getPairs() {
@@ -70,6 +82,84 @@ public class Mapping implements Serializable {
 
 	public void setId(Long id) {
 		this.id = id;
+	}
+
+	public boolean containsToId(String id) {
+		for (Pair p : pairs) {
+			if (p.getToName().equals(id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean containsChildrenOfToId(String id) {
+		for (Pair p : pairs) {
+			if (!p.getToName().equals(id) && p.getToName().startsWith(id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public Pair getFirstChildrenOfToId(String id) {
+		for (Pair p : pairs) {
+			if (!p.getToName().equals(id) && p.getToName().startsWith(id)) {
+				return p;
+			}
+		}
+		return null;
+	}
+
+	public boolean containsFromId(String id) {
+		for (Pair p : pairs) {
+			if (p.getName().equals(id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean containsChildrenOfFromId(String id) {
+		for (Pair p : pairs) {
+			if (!p.getName().equals(id) && p.getName().startsWith(id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public Pair getPairByToName(String name) {
+		for (Pair p : pairs) {
+			if (p.getToName().equals(name)) {
+				return p;
+			}
+		}
+		return null;
+	}
+
+	public String getFromClassVarName() {
+		return getVarName(fromClass.substring(fromClass.lastIndexOf('.') + 1));
+	}
+
+	public String getToClassVarName() {
+		return getVarName(toClass.substring(toClass.lastIndexOf('.') + 1));
+	}
+
+	private String getVarName(String simpleName) {
+		return Character.toLowerCase(simpleName.charAt(0))
+		        + simpleName.substring(1);
+	}
+
+	public Pair getFirstDirectChildrenOfToId(String id) {
+		for (Pair p : pairs) {
+			if (!p.getToName().equals(id) && p.getToName().startsWith(id)) {
+				if (!p.getToName().substring(id.length() + 1).contains(".")) {
+					return p;
+				}
+			}
+		}
+		return null;
 	}
 
 }

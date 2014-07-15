@@ -1,3 +1,5 @@
+/* This is a generated class */
+
 package ${package};
 
 import org.springframework.stereotype.Component;

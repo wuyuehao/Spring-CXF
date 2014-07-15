@@ -28,25 +28,30 @@
 	<h2>PPaas-ASF Mapping Viewer</h2>
 	<div class="container-fluid" ng-controller="mapCtrl">
 		<div class="row">
-			<div class="col-lg-5">
+			<div class="col-lg-4">
 				<table width="100%">
 					<tr>
 						<td>From:</td>
-						<td><input class="form-control" type="text" id="ltext"
-							value="{{from_class}}" /></td>
+						<td><input class="form-control" type="text" ng-model="from_class"/></td>
 					</tr>
 				</table>
 			</div>
-			<div class="col-lg-3">
-				<p align="center">
-					<button class="btn btn-info" ng-click="getData()">Get Data</button>
-					<select ng-model="currentMap"
-						ng-options="map.id for map in mappings"></select>
-					<button class="btn btn-info" ng-click="loadMap()">Load Map</button>
-					<button class="btn btn-info" ng-click="genCode()">
+			<div class="col-lg-4">
+				<table align="center" width="80%">
+                    <tr>
+					<td><button class="btn btn-info" ng-click="getData()">Get Data</button></td>
+					<td><button class="btn btn-info" ng-click="loadMap()">Load Map</button></td>
+					<td><select ng-model="currentMap"
+						ng-options="map.id for map in mappings"></select></td>
+					
+					<td><button class="btn btn-info" ng-click="genCode()">
 						<span class="glyphicon glyphicon-export"></span>Gen Code
-					</button>
-				</p>
+					</button></td>
+					<td><button class="btn btn-info" ng-click="genTest()">
+                        <span class="glyphicon glyphicon-export"></span>Gen Test
+                    </button></td>
+                    </tr>
+                    </table>
 			</div>
 			<div class="col-lg-4">
 				<table width="100%">

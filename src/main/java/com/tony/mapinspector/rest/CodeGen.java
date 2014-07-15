@@ -3,11 +3,11 @@ package com.tony.mapinspector.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
-import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -38,50 +38,244 @@ public class CodeGen {
 
 	@Autowired
 	MappingDao mappingDao;
-	HashSet<String> varNames = new HashSet<String>();
+	ThreadLocal<HashSet<String>> threadLocal = new ThreadLocal<HashSet<String>>() {
+		public HashSet<String> initialValue() {
+			return new HashSet<String>();
+		}
+	};
 
 	private Logger log = Logger.getLogger(CodeGen.class);
+
+	@GET
+	@Path("testgen/{map_id}")
+	@Produces({ MediaType.APPLICATION_JSON })
+	public String genUT(@PathParam("map_id") Long id,
+	        @Context ServletContext context) {
+
+		// clear name spaces for every single call
+		threadLocal.get().clear();
+
+		// create model
+		HashMap<String, Object> mapperModel = new HashMap<String, Object>();
+
+		// freemarker initialization
+		Configuration cfg = freeMarkerInit(context);
+
+		// metadata initilization
+		Mapping mapping = mappingDao.findOne(id);
+		String fromClass = mapping.getFromClass();
+		String toClass = mapping.getToClass();
+		List<Pair> pairs = mapping.getPairs();
+		mapperModelInit(mapperModel, fromClass, toClass);
+
+		mapperModel.put(
+		        "nestedObjects",
+		        constructNestedObjs(fromClass, cfg,
+		                Util.getVarName(Util.getSimpleName(fromClass))));
+
+		// feed values
+
+		HashMap<String, String> feeder = new HashMap<String, String>();
+		int count = 0;
+		for (Pair p : pairs) {
+			String key = Util.getSetterById(p.getName());
+			String type = p.getType();
+			String value = null;
+			if (type.equals("java.util.Date")) {
+				value = "new java.util.Date(" + Util.nextLong(4294967295L)
+				        + "L)";
+			} else if (type.equals("java.lang.String")) {
+				value = "\"" + Integer.toString(count) + "\"";
+			} else if (type.equals("java.lang.Boolean")) {
+				value = "true";
+			} else if (type.equals("java.util.List")) {
+				value = "new ArrayList(Arrays.asList(\"" + count + "\"))";
+			} else {
+				try {
+					Class c = Class.forName(type);
+					if (c.isEnum()) {
+						value = type.replaceAll("\\$", ".") + "."
+						        + c.getEnumConstants()[0].toString();
+					} else {
+						log.error("Not able to handle type = " + type);
+					}
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			feeder.put(key, value);
+			count++;
+		}
+		mapperModel.put("feeder", feeder);
+
+		// construct mappings
+		HashMap<String, String> assertions = new HashMap<String, String>();
+
+		for (Pair p : pairs) {
+			String key = Util.getGetterById(p.getName());
+			String value = Util.getGetterById(p.getToName());
+			String type = p.getType();
+			try {
+	            if(Class.forName(type).isEnum()){
+	            	key = key + "().toString()";
+	            	value = value + "AsEnum().getName()";
+	            }else{
+	            	key = key + "()";
+	            	value = value + "()";
+	            }
+            } catch (ClassNotFoundException e) {
+	            // TODO Auto-generated catch block
+	            e.printStackTrace();
+            }
+			
+			assertions.put(key, value);
+		}
+		mapperModel.put("assertions", assertions);
+
+		StringWriter out = new StringWriter();
+		write(cfg, out, mapperModel, "UTmapper.ftl");
+
+		return out.getBuffer().toString();
+
+	}
+
+	private String constructNestedObjs(String fromClass, Configuration cfg,
+	        String parentName) {
+		Class c = null;
+
+		try {
+			c = Class.forName(fromClass);
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		StringWriter out = new StringWriter();
+
+		rec(cfg, parentName, c, out);
+
+		return out.getBuffer().toString();
+	}
+
+	private void rec(Configuration cfg, String parentName, Class c,
+	        StringWriter out) {
+		Method[] methods = c.getMethods();
+		Arrays.sort(methods, new MethodComparator());
+		for (Method m : methods) {
+			String methodName = m.getName();
+			if (isValidSetMethod(methodName)) {
+				Class parameter = m.getParameterTypes()[0];
+				if(!parameter.getName().startsWith("com.paypal") || parameter.isEnum()){
+					continue;
+				}
+				HashMap<String, String> map = new HashMap<String, String>();
+				map.put("class_name", parameter.getName());
+				String varName =  Util.getVarName(parameter.getSimpleName());
+				varName = Util.handleDups(threadLocal.get(), varName);
+				map.put("var_name", varName);
+				map.put("parent_name", parentName);
+				map.put("setter", methodName);
+				write(cfg, out, map, "createVO.ftl");
+				rec(cfg, varName, parameter, out);
+			}
+		}
+	}
 
 	@GET
 	@Path("codegen/{map_id}")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String gen(@PathParam("map_id") Long id,
-			@Context ServletContext context) {
+	        @Context ServletContext context) {
 
-		varNames.clear(); // clear name spaces for every single call
+		// clear name spaces for every single call
+		threadLocal.get().clear();
 
-		// freemarker init
-		Configuration cfg = new Configuration();
-		cfg.setServletContextForTemplateLoading(context, "WEB-INF/templates");
-		cfg.setObjectWrapper(new DefaultObjectWrapper());
-		cfg.setDefaultEncoding("UTF-8");
-		cfg.setTemplateExceptionHandler(TemplateExceptionHandler.HTML_DEBUG_HANDLER);
-		cfg.setIncompatibleImprovements(new Version(2, 3, 20)); // FreeMarker
-																// 2.3.20
+		// create model
+		HashMap<String, Object> mapperModel = new HashMap<String, Object>();
 
-		// meta data init
+		// freemarker initialization
+		Configuration cfg = freeMarkerInit(context);
+
+		// metadata initilization
 		Mapping mapping = mappingDao.findOne(id);
 		String fromClass = mapping.getFromClass();
 		String toClass = mapping.getToClass();
-
 		List<Pair> pairs = mapping.getPairs();
-
-		// create model
-		HashMap<String, String> mapperModel = new HashMap<String, String>();
+		mapperModelInit(mapperModel, fromClass, toClass);
 
 		// generate code for nested VOs
-		Class clazz = null;
+		Class c = null;
 		try {
-			clazz = Class.forName(toClass);
+			c = Class.forName(toClass);
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		String nestedObjects = constructVOs(clazz, cfg);
-		mapperModel.put("nestedObjects", nestedObjects);
+		StringWriter out = new StringWriter();
+		constructVOs(c, cfg, out, mapping, "", mapping.getToClassVarName()
+		        + "VO");
+		mapperModel.put("nestedObjects", out.getBuffer().toString());
 
-		// construct methods
+		// construct mappings
+		out = constructMappings(cfg, fromClass, pairs);
+		mapperModel.put("mappingMethods", out.getBuffer().toString());
 
+		// combine the result
+		out = new StringWriter();
+		write(cfg, out, mapperModel, "mapper.ftl");
+
+		// persist for the varNames
+		mappingDao.save(mapping);
+
+		return out.getBuffer().toString();
+
+	}
+
+	@GET
+	@Path("codegen/sandbox/{map_id}")
+	@Produces({ MediaType.APPLICATION_JSON })
+	public String sandbox(@PathParam("map_id") Long id,
+	        @Context ServletContext context) {
+
+		// clear name spaces for every single call
+		threadLocal.get().clear();
+
+		// create model
+		HashMap<String, Object> mapperModel = new HashMap<String, Object>();
+
+		// freemarker initialization
+		Configuration cfg = freeMarkerInit(context);
+
+		// metadata initilization
+		Mapping mapping = mappingDao.findOne(id);
+		String fromClass = mapping.getFromClass();
+		String toClass = mapping.getToClass();
+		List<Pair> pairs = mapping.getPairs();
+		mapperModelInit(mapperModel, fromClass, toClass);
+
+		StringWriter out = new StringWriter();
+
+		generateMappings(toClass, cfg, mapping, "", out);
+
+		return out.getBuffer().toString();
+
+	}
+
+	private void mapperModelInit(HashMap<String, Object> mapperModel,
+	        String fromClass, String toClass) {
+		mapperModel.put("fromClass", fromClass);
+		mapperModel.put("toClass", toClass);
+		mapperModel.put("fromClassName", getSimpleName(fromClass));
+		mapperModel.put("toClassName", getSimpleName(toClass));
+		mapperModel.put("toClassVarName", getVarName(getSimpleName(toClass))
+		        + "VO");
+		mapperModel.put("fromClassVarName",
+		        getVarName(getSimpleName(fromClass)));
+		mapperModel.put("package", props.get("package"));
+	}
+
+	private StringWriter constructMappings(Configuration cfg, String fromClass,
+	        List<Pair> pairs) {
 		Class fromClazz = null;
 		try {
 			fromClazz = Class.forName(fromClass);
@@ -95,45 +289,21 @@ public class CodeGen {
 		}
 
 		StringWriter out = new StringWriter();
-		mapMethods(fromClazz, map, cfg, out, "", getVarName(fromClazz.getSimpleName()));
-		
-		
-		mapperModel.put("mappingMethods", out.getBuffer().toString());
+		mapMethodsRec(fromClazz, map, cfg, out, "",
+		        getVarName(fromClazz.getSimpleName()));
+		return out;
+	}
 
-		mapperModel.put("fromClass", fromClass);
-		mapperModel.put("toClass", toClass);
-		mapperModel.put("fromClassName", getSimpleName(fromClass));
-		mapperModel.put("toClassName", getSimpleName(toClass));
-		mapperModel.put("toClassVarName", getVarName(getSimpleName(toClass))+"VO");
-		mapperModel.put("fromClassVarName",
-				getVarName(getSimpleName(fromClass)));
-		mapperModel.put("package", props.get("package"));
-
-		out = new StringWriter();
-
-		write(cfg, out, mapperModel, "mapper.ftl");
-
-		/*
-		 * String fromClassName = getSimpleName(fromClass); String toClassName =
-		 * getSimpleName(toClass); for(Pair p : pairs){ String type =
-		 * p.getType(); String name = p.getName(); String toName =
-		 * p.getToName(); String toType = p.getToType(); String tempFile =
-		 * "sameTypeMapping.ftl"; if(type.equals(toType)){ } HashMap<String,
-		 * String> map = new HashMap<String, String>();
-		 * map.put("toClassVarName", getVarName(getSimpleName(toName)));
-		 * map.put("setMethodName", ""); map.put("fromClassVarName", "");
-		 * map.put("getMethodName", ""); StringWriter out = new StringWriter();
-		 * try { Template template = cfg.getTemplate(tempFile);
-		 * template.process(map, out); } catch (IOException e) { // TODO
-		 * Auto-generated catch block e.printStackTrace(); } catch
-		 * (TemplateException e) { // TODO Auto-generated catch block
-		 * e.printStackTrace(); }
-		 * 
-		 * }
-		 */
-
-		return out.getBuffer().toString();
-
+	private Configuration freeMarkerInit(ServletContext context) {
+		// freemarker init
+		Configuration cfg = new Configuration();
+		cfg.setServletContextForTemplateLoading(context, "WEB-INF/templates");
+		cfg.setObjectWrapper(new DefaultObjectWrapper());
+		cfg.setDefaultEncoding("UTF-8");
+		cfg.setTemplateExceptionHandler(TemplateExceptionHandler.HTML_DEBUG_HANDLER);
+		cfg.setIncompatibleImprovements(new Version(2, 3, 20)); // FreeMarker
+		                                                        // 2.3.20
+		return cfg;
 	}
 
 	private class MethodComparator implements Comparator<Method> {
@@ -144,24 +314,61 @@ public class CodeGen {
 
 	}
 
-	private void mapMethods(Class clazz, HashMap<String, Pair> pairs,
-			Configuration cfg, StringWriter out, String key, String parentName) {
+	private void constructVOs(Class c, Configuration cfg, StringWriter out,
+	        Mapping mapping, String idPrefix, String parentVar) {
+		Method[] methods = c.getMethods();
+		Arrays.sort(methods, new MethodComparator());
+		for (Method m : methods) {
+			String methodName = m.getName();
+			if (isValidSetMethod(methodName)) {
+				Class parameter = m.getParameterTypes()[0];
+				String id = idPrefix.equals("") ? methodName.substring(3)
+				        : idPrefix + "." + methodName.substring(3);
+				Pair p = mapping.getFirstDirectChildrenOfToId(id);
+				boolean isDirectChild = true;
+				if (p == null) {
+					isDirectChild = false;
+					p = mapping.getFirstChildrenOfToId(id);
+				}
+				if (p != null) {
+					String className = parameter.getName();
+					String varName = isDirectChild ? p.getToParentVar() : Util
+					        .handleDups(mapping.getVarNames(),
+					                getVarName(parameter.getSimpleName()), id,
+					                Util.TO);
+					String parentVarName = parentVar;
+					String setMethodName = methodName;
+
+					HashMap<String, String> map = new HashMap<String, String>();
+					map.put("class_name", className);
+					map.put("var_name", varName);
+					map.put("parent_name", parentVarName);
+					map.put("setter", setMethodName);
+
+					String tempFile = "createVO.ftl";
+					write(cfg, out, map, tempFile);
+					constructVOs(parameter, cfg, out, mapping, id, varName);
+				}
+			}
+		}
+	}
+
+	private void mapMethodsRec(Class clazz, HashMap<String, Pair> pairs,
+	        Configuration cfg, StringWriter out, String key, String parentName) {
 
 		Method[] methods = clazz.getMethods();
 
 		Arrays.sort(methods, new MethodComparator());
 
 		for (Method m : methods) {
-			String name = m.getName();
-			Class type = m.getReturnType();
-			if (name.startsWith("get") && name.length() > 3
-					&& !name.equals("getClass")
-					&& !name.equals("getAdditionalProperties")) {
-				String className = type.getCanonicalName();
-				String varName = getVarName(name.substring(3));
-				varName = handleDups(varNames, varName);
+			String methodName = m.getName();
+			if (isValidSetMethod(methodName)) {
+				Class paramenter = m.getParameterTypes()[0];
+				String className = paramenter.getCanonicalName();
+				String varName = getVarName(methodName.substring(3));
+				// varName = handleDups(threadLocal.get(), varName);
 				String parentVarName = parentName;
-				String getMethodName = name;
+				String getMethodName = "get" + methodName.substring(3);
 
 				HashMap<String, String> map = new HashMap<String, String>();
 				map.put("className", className);
@@ -171,8 +378,8 @@ public class CodeGen {
 
 				String tempFile = "defineInput.ftl";
 				write(cfg, out, map, tempFile);
-				String myKey = key.length() == 0 ? name.substring(3) : key
-						+ "." + name.substring(3);
+				String myKey = key.length() == 0 ? methodName.substring(3)
+				        : key + "." + methodName.substring(3);
 				if (pairs.containsKey(myKey)) {
 					// map and return;
 					Pair p = pairs.get(myKey);
@@ -190,33 +397,33 @@ public class CodeGen {
 
 					if (!fromType.equals(toType)) {
 						if (fromType.equals("java.util.Date")
-								&& toType.equals("java.lang.Long")) {
+						        && toType.equals("java.lang.Long")) {
 							mappingTemp = "Date2LongMapping.ftl";
 						} else if (toType.equals("java.math.BigInteger")
-								&& fromType.equals("java.lang.String")) {
+						        && fromType.equals("java.lang.String")) {
 							mappingTemp = "String2BigIntegerMapping.ftl";
 						} else if (toType.equals("java.lang.Byte")
-								&& fromType.equals("java.lang.String")) {
+						        && fromType.equals("java.lang.String")) {
 							mappingTemp = "String2ByteMapping.ftl";
 						} else if (isFromEnum) {
 							mappingTemp = "Enum2StringMapping.ftl";
 						} else if (toType.equals("com.paypal.types.Currency")
-								&& fromType
-										.equals("com.paypal.api.platform.riskprofileapi.Currency")) {
+						        && fromType
+						                .equals("com.paypal.api.platform.riskprofileapi.Currency")) {
 							mappingTemp = "Currency2CurrencyMapping.ftl";
 						} else if (toType.equals("java.lang.Long")
-								&& fromType.equals("java.lang.Integer")) {
+						        && fromType.equals("java.lang.Integer")) {
 							mappingTemp = "Integer2LongMapping.ftl";
 						} else if (toType.equals("java.lang.Long")
-								&& fromType.equals("java.lang.String")) {
+						        && fromType.equals("java.lang.String")) {
 							mappingTemp = "String2LongMapping.ftl";
 						} else {
 							log.error("No Mapping Templates for : " + fromType
-									+ "->" + toType);
+							        + "->" + toType);
 						}
 					}
-					String toClassVarName = normalizeVOName(parentName);
-					toClassVarName = handleSpecialCase(toClassVarName);
+					String toClassVarName = p.getToVarName();
+					// toClassVarName = handleSpecialCase(toClassVarName);
 					map.put("toClassVarName", toClassVarName);
 					map.put("parameterName", toType);
 					map.put("toClassSetMethodName", getSetterNameFromId(toName));
@@ -226,8 +433,8 @@ public class CodeGen {
 					for (String s : set) {
 						if (s.startsWith(myKey)) {
 							// recursive if there is children in mapping table
-							mapMethods(m.getReturnType(), pairs, cfg, out,
-									myKey, varName);
+							mapMethodsRec(paramenter, pairs, cfg, out, myKey,
+							        varName);
 							break;
 						}
 					}
@@ -283,19 +490,12 @@ public class CodeGen {
 		return setter;
 	}
 
-	private String getGetterNameFromId(String toName) {
-		if (!toName.contains("."))
-			return "get" + toName;
-		int index = toName.lastIndexOf(".");
-		String getter = toName.substring(0, index);
-		String setter = toName.substring(index + 1);
-		getter = "get" + getter.replaceAll("\\.", "().get");
-		setter = "set" + setter;
-		return getter + "." + setter;
+	private String getGetterFromId(String id) {
+		return "get" + id.replaceAll("\\.", "().get");
 	}
 
-	private void write(Configuration cfg, StringWriter out,
-			HashMap<String, String> map, String tempFile) {
+	private void write(Configuration cfg, StringWriter out, HashMap map,
+	        String tempFile) {
 		Template template;
 		try {
 			template = cfg.getTemplate(tempFile);
@@ -313,66 +513,129 @@ public class CodeGen {
 		return toClass.substring(toClass.lastIndexOf(".") + 1);
 	}
 
-	private String constructVOs(Class clazz, Configuration cfg) {
-
-		StringWriter out = new StringWriter();
-
-		ArrayDeque<Class> curr = new ArrayDeque<Class>();
-		ArrayDeque<Class> next = new ArrayDeque<Class>();
-
-		curr.offer(clazz);
-
-		while (!curr.isEmpty()) {
-			Class c = curr.poll();
-			Method[] methods = c.getMethods();
-			Arrays.sort(methods, new MethodComparator());
-			for (Method m : methods) {
-				String name = m.getName();
-				if (name.startsWith("set") && name.length() > 3) {
-					Class parameter = m.getParameterTypes()[0];
-					if (parameter.getName().endsWith("VO")) {
-
-						String className = parameter.getName();
-						String varName = normalizeVOName(parameter
-								.getSimpleName());
-						varName = handleDups(varNames, varName);
-						String parentVarName = normalizeVOName(c
-								.getSimpleName());
-						String setMethodName = name;
-
-						HashMap<String, String> map = new HashMap<String, String>();
-						map.put("className", className);
-						map.put("varName", varName);
-						map.put("parentVarName", parentVarName);
-						map.put("setMethodName", setMethodName);
-
-						String tempFile = "createVO.ftl";
-						write(cfg, out, map, tempFile);
-						next.offer(parameter);
-					}
-				}
-			}
-			if (curr.isEmpty()) {
-				ArrayDeque<Class> tmp = curr;
-				curr = next;
-				next = tmp;
-			}
-		}
-		return out.getBuffer().toString();
+	private String getVarFromId(String id) {
+		return getVarName(id.substring(id.lastIndexOf('.') + 1));
 	}
 
-	private String handleDups(HashSet<String> varNames, String varName) {
-		while (varNames.contains(varName)) {
-			log.debug("Found a dup name: " + varName);
-			varName += "_";
+	private void writeBeforeMapping(Configuration cfg, StringWriter out,
+	        Class parameter, String parent, String varName, String setter) {
+		String type = parameter.getName();
+
+		HashMap<String, String> map = new HashMap<String, String>();
+		map.put("class_type", type);
+		map.put("parent_var", parent);
+		map.put("var_name", varName);
+		map.put("setter", setter);
+
+		// ${class_type} ${var_name} = new ${class_type}();
+		// ${parent_var}.${setter}(${var_name});
+
+		String template = "Mapping_Before.ftl";
+		write(cfg, out, map, template);
+	}
+
+	private void writeMapping(Configuration cfg, StringWriter out, Pair pair) {
+
+		String fromVar = pair.getFromVar();
+		String toVar = pair.getToParentVar();
+		String fromType = pair.getType();
+		String toType = pair.getToType();
+
+		HashMap<String, String> map = new HashMap<String, String>();
+
+		map.put("to_parent_var", pair.getVarName());
+		map.put("from_parent_var", pair.getVarName());
+
+		map.put("setter", pair.getSetter());
+		map.put("getter", pair.getGetter());
+
+		boolean isFromEnum = false;
+		try {
+			isFromEnum = Class.forName(fromType).isEnum();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		varNames.add(varName);
-		return varName;
+		String template = "Mapping_SameType.ftl";
+		// if (!fromType.equals(toType)) {
+		// if (fromType.equals("java.util.Date")
+		// && toType.equals("java.lang.Long")) {
+		// template = "Mapping_Date2Long.ftl";
+		// } else if (toType.equals("java.math.BigInteger")
+		// && fromType.equals("java.lang.String")) {
+		// template = "Mapping_String2BigInteger.ftl";
+		// } else if (toType.equals("java.lang.Byte")
+		// && fromType.equals("java.lang.String")) {
+		// template = "Mapping_String2Byte.ftl";
+		// } else if (isFromEnum) {
+		// template = "Mapping_Enum2String.ftl";
+		// } else if (toType.equals("com.paypal.types.Currency")
+		// && fromType
+		// .equals("com.paypal.api.platform.riskprofileapi.Currency")) {
+		// template = "Mapping_Currency2Currency.ftl";
+		// } else if (toType.equals("java.lang.Long")
+		// && fromType.equals("java.lang.Integer")) {
+		// template = "Mapping_Integer2Long.ftl";
+		// } else if (toType.equals("java.lang.Long")
+		// && fromType.equals("java.lang.String")) {
+		// template = "Mapping_String2Long.ftl";
+		// } else {
+		// log.error("No Mapping Templates for : " + fromType + "->"
+		// + toType);
+		// }
+		// }
+		write(cfg, out, map, template);
+	}
+
+	private boolean isValidSetMethod(String methodName) {
+		return methodName.startsWith("set") && methodName.length() > 3
+		        && !methodName.equals("setAdditionalProperties");
+	}
+
+	private Method[] getSortedMethods(String toClass) {
+		Class clazz = null;
+		try {
+			clazz = Class.forName(toClass);
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		Method[] methods = clazz.getMethods();
+		Arrays.sort(methods, new MethodComparator());
+		return methods;
+	}
+
+	private void generateMappings(String toClass, Configuration cfg,
+	        Mapping mapping, String idPrefix, StringWriter out) {
+		for (Method m : getSortedMethods(toClass)) {
+			String methodName = m.getName();
+			if (isValidSetMethod(methodName)) {
+				Class parameter = m.getParameterTypes()[0];
+				String id = idPrefix.equals("") ? methodName.substring(3)
+				        : idPrefix + "." + methodName.substring(3);
+				if (mapping.containsToId(id)) {
+					Pair pair = mapping.getPairByToName(id);
+					writeMapping(cfg, out, pair);
+				} else if (mapping.containsChildrenOfToId(id)) {
+					// String toVarName = handleDups(threadLocal.get(),
+					// getVarFromId(id) + "VO");
+					// String fromVarName = handleDups(threadLocal.get(),
+					// getVarFromId(id));
+					// String setter = "set"
+					// + id.substring(id.lastIndexOf('.') + 1);
+					// writeBeforeMapping(cfg, out, parameter, fromVarName,
+					// toVarName, setter);
+					// generateMappings(parameter.getName(), cfg, mapping, id,
+					// out);
+				}
+			}
+		}
 	}
 
 	private String getVarName(String simpleName) {
 		return Character.toLowerCase(simpleName.charAt(0))
-				+ simpleName.substring(1);
+		        + simpleName.substring(1);
 	}
 
 }

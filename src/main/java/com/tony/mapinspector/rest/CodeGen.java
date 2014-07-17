@@ -3,11 +3,11 @@ package com.tony.mapinspector.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -26,7 +26,6 @@ import com.tony.mapinspector.dao.MappingDao;
 import com.tony.mapinspector.entity.Mapping;
 import com.tony.mapinspector.entity.Pair;
 
-import java.util.Arrays;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
@@ -80,7 +79,7 @@ public class CodeGen {
 		for (Pair p : pairs) {
 			String key = Util.getSetterById(p.getName());
 			String type = p.getType();
-			String value = null;
+			String value = ""+count;
 			if (type.equals("java.util.Date")) {
 				value = "new java.util.Date(" + Util.nextLong(4294967295L)
 				        + "L)";

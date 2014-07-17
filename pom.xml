@@ -195,7 +195,31 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-
+		<dependency>
+			<groupId>com.paypal.risk.userverification</groupId>
+			<artifactId>domain-util</artifactId>
+			<version>1.7.8</version>
+		</dependency>
+		<dependency>
+			<groupId>com.paypal.risk.userverification</groupId>
+			<artifactId>domain-client</artifactId>
+			<version>1.7.8</version>
+		</dependency>
+		<dependency>
+			<groupId>com.paypal.risk.userverification</groupId>
+			<artifactId>domain-verification</artifactId>
+			<version>1.7.8</version>
+		</dependency>
+	  	<dependency>
+			<groupId>com.paypal.risk.userverification.services.internal</groupId>
+			<artifactId>riskuserverification-service-api</artifactId>
+			<version>1.7.8</version>
+		</dependency>
+	  	<dependency>
+			<groupId>com.paypal.api.platform.riskuserverificationservapi</groupId>
+			<artifactId>risk-user-verification-serv-api</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<plugins>

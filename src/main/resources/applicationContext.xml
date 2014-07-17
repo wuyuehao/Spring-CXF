@@ -16,7 +16,7 @@
 	<import resource="properties.xml"/>
 	
 	<context:component-scan base-package="com" />
-	<context:property-placeholder location="classpath*:WEB-INF/*.properties" />
+	<context:property-placeholder location="classpath*:*.properties" />
 
 	<bean id="dependencyRS" class="com.tony.mapinspector.rest.DependencyRSImpl" />
 	<bean id="mappingRS" class="com.tony.mapinspector.rest.MappingManagerImpl" />

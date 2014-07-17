@@ -7,6 +7,7 @@
 	<script src="./js/angular.min.js"></script>
 	<script src="./js/ui-bootstrap-tpls-0.11.0.min.js"></script>
 	<script src="./js/app.js"></script>
+	<title>PPaas-ASF Mapping Viewer v0.1</title>
   </head>
 
 <body>

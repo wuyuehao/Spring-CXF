@@ -26,7 +26,7 @@ import com.tony.mapinspector.dao.MappingDao;
 import com.tony.mapinspector.entity.Mapping;
 import com.tony.mapinspector.entity.Pair;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
+import java.util.Arrays;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;

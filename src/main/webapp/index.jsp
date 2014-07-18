@@ -41,8 +41,8 @@
 				<table align="center" width="80%">
                     <tr>
 					<td><button class="btn btn-info" ng-click="getData()">Get Data</button></td>
-					<td><button class="btn btn-info" ng-click="loadMap()">Load Map</button></td>
-					<td><select ng-model="currentMap"
+					<td><button class="btn btn-info disabled" ng-click="loadMap()">Map Id:</button></td>
+					<td><select ng-model="currentMap" ng-change="loadMap()"
 						ng-options="map.id for map in mappings"></select></td>
 					
 					<td><button class="btn btn-info" ng-click="genCode()">

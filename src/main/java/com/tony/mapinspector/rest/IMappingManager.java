@@ -36,7 +36,7 @@ public interface IMappingManager {
 	@POST
 	@Path("/")
 	@Consumes({ MediaType.APPLICATION_JSON })
-	public void create(Mapping mapping, @Context HttpServletResponse response);
+	public CommonResponseBase create(Mapping mapping, @Context HttpServletResponse response);
 
 	@PUT
 	@Path("/{id}")

@@ -37,9 +37,11 @@ public class MappingManagerImpl implements IMappingManager {
 		return ret;
 	}
 
-	public void create(Mapping mapping, HttpServletResponse response) {
-		mappingDao.save(mapping);
-		return;
+	public CommonResponseBase create(Mapping mapping, HttpServletResponse response) {
+		mapping = mappingDao.save(mapping);
+		CommonResponseBase ret = new CommonResponseBase();
+		ret.setIdCreated(mapping.getId());
+		return ret;
 	}
 
 	public String update(Long id, Mapping mapping, HttpServletResponse response) {

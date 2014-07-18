@@ -1,7 +1,7 @@
-var app = angular.module('myApp', ['ui.bootstrap']);
+var app = angular.module('myApp', [ 'ui.bootstrap' ]);
 
 function mapCtrl($scope, $modal, $http, $log) {
-	
+
 	$scope.from_class = "com.paypal.api.platform.riskprofileapi.IdentityProfileDecisionRequest";
 
 	$scope.mapping = [];
@@ -11,12 +11,12 @@ function mapCtrl($scope, $modal, $http, $log) {
 	$scope.currentMap;
 	$scope.guessStatus = "Guess On";
 	$scope.guessClass = "btn btn-success";
-	
+
 	$scope.guessOnOff = function() {
-		if($scope.guessStatus == "Guess On"){
+		if ($scope.guessStatus == "Guess On") {
 			$scope.guessStatus = "Guess Off";
 			$scope.guessClass = "btn btn-default";
-		}else{
+		} else {
 			$scope.guessStatus = "Guess On";
 			$scope.guessClass = "btn btn-success";
 		}
@@ -32,7 +32,8 @@ function mapCtrl($scope, $modal, $http, $log) {
 			if (this.item.mapto) {
 				$scope.searchTextRight = this.item.mapto;
 			} else {
-				$scope.searchTextRight = this.item.name.substring(this.item.name.lastIndexOf("."));
+				$scope.searchTextRight = this.item.name
+						.substring(this.item.name.lastIndexOf("."));
 			}
 		}
 		console.log($scope.selected);
@@ -68,7 +69,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 		}
 	};
 
-	$scope.loadMappings = function() {
+	$scope.loadMappings = function(id) {
 		var httpRequest = $http({
 			method : 'GET',
 			url : '/rs/mapping/class/' + $scope.from_class,
@@ -76,7 +77,12 @@ function mapCtrl($scope, $modal, $http, $log) {
 			accepts : "application/json"
 		}).success(function(data, status) {
 			$scope.mappings = data;
-			$scope.currentMap = data[data.length - 1];
+			angular.forEach(data, function(obj) {
+				// console.log(obj.id + "==?"+ id);
+				if (obj.id == id) {
+					$scope.currentMap = obj;
+				}
+			});
 		});
 	};
 
@@ -84,7 +90,9 @@ function mapCtrl($scope, $modal, $http, $log) {
 		if (!id) {
 			id = 0;
 		}
-		console.log('/rs/inspector/data/'+$scope.from_class + "?map_id=" + id);
+		console
+				.log('/rs/inspector/data/' + $scope.from_class + "?map_id="
+						+ id);
 		var httpRequest = $http({
 			method : 'GET',
 			url : '/rs/inspector/data/' + $scope.from_class + "?map_id=" + id,
@@ -104,7 +112,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 			});
 			$scope.to_class = data.to_class;
 			$scope.getDataRight(id);
-			$scope.loadMappings();
+			$scope.loadMappings(id);
 		});
 	};
 
@@ -189,7 +197,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 			$scope.open('lg', data);
 		});
 	};
-	
+
 	$scope.genTest = function() {
 		var url = '/rs/testgen/' + $scope.currentMap.id;
 		var httpRequest = $http({
@@ -202,38 +210,37 @@ function mapCtrl($scope, $modal, $http, $log) {
 			$scope.open('lg', data);
 		});
 	};
-	
-	
-	 $scope.open = function (size, data) {
-		    var modalInstance = $modal.open({
-		      templateUrl: 'myModalContent.html',
-		      controller: ModalInstanceCtrl,
-		      size: size,
-		      resolve: {
-		        items: function () {
-		          return data;
-		        }
-		      }
-		    });
 
-		    modalInstance.result.then(function (selectedItem) {
-		      $scope.selected = selectedItem;
-		    }, function () {
-		      $log.info('Modal dismissed at: ' + new Date());
-		    });
-		  };
+	$scope.open = function(size, data) {
+		var modalInstance = $modal.open({
+			templateUrl : 'myModalContent.html',
+			controller : ModalInstanceCtrl,
+			size : size,
+			resolve : {
+				items : function() {
+					return data;
+				}
+			}
+		});
+
+		modalInstance.result.then(function(selectedItem) {
+			$scope.selected = selectedItem;
+		}, function() {
+			$log.info('Modal dismissed at: ' + new Date());
+		});
+	};
 
 }
 
-var ModalInstanceCtrl = function ($scope, $modalInstance, items) {
+var ModalInstanceCtrl = function($scope, $modalInstance, items) {
 
-	  $scope.gencode = items;
+	$scope.gencode = items;
 
-	  $scope.ok = function () {
-	    $modalInstance.close($scope.selected.item);
-	  };
-
-	  $scope.cancel = function () {
-	    $modalInstance.dismiss('cancel');
-	  };
+	$scope.ok = function() {
+		$modalInstance.close($scope.selected.item);
 	};
+
+	$scope.cancel = function() {
+		$modalInstance.dismiss('cancel');
+	};
+};

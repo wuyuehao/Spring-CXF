@@ -3,8 +3,6 @@
 package ${package};
 
 import org.springframework.stereotype.Component;
-import com.paypal.types.Currency;
-import com.paypal.types.Currency.Info;
 
 import ${fromClass};
 import ${toClass};
@@ -22,7 +20,7 @@ public class ${fromClassName}MapperGen{
         return ${toClassVarName};
     }
     
-    private Currency getCurrency(
+    /*private Currency getCurrency(
             com.paypal.api.platform.riskprofileapi.Currency currency) {
         if (currency == null) {
             return null;
@@ -34,6 +32,6 @@ public class ${fromClassName}MapperGen{
         }
         return new Currency(Info.getInstance(isoCode),
                 Double.parseDouble(value));
-    }
+    }*/
 
 }

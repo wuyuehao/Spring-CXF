@@ -32,7 +32,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 			if (this.item.mapto) {
 				$scope.searchTextRight = this.item.mapto;
 			} else {
-				$scope.searchTextRight = this.item.name;
+				$scope.searchTextRight = this.item.name.substring(this.item.name.lastIndexOf("."));
 			}
 		}
 		console.log($scope.selected);

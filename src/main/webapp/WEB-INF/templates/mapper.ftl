@@ -1,4 +1,6 @@
-/* This is a generated class */
+/*
+ * This is a generated class 
+ */
 
 package ${package};
 

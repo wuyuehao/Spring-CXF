@@ -5,8 +5,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +36,8 @@ public class MappingManagerImpl implements IMappingManager {
 		for (Mapping m : mappings) {
 			LightMapping lm = new LightMapping();
 			lm.setId(m.getId());
+			lm.setFromClass(m.getFromClass());
+			lm.setToClass(m.getToClass());
 			lm.setLastUpdated(m.getLastUpdated());
 			ret.add(lm);
 		}
@@ -117,5 +124,20 @@ public class MappingManagerImpl implements IMappingManager {
 	public Mapping read(Long id, HttpServletResponse response) {
 		return mappingDao.findOne(id);
 	}
+
+	@GET
+    @Path("/from_class")
+    @Produces("application/json")
+    public CommonResponseBase readUniqueFromClass(
+            @Context HttpServletResponse response) {
+		Set<String> set = new HashSet<String>();
+		List<Mapping> list = mappingDao.findAll();
+		for(Mapping m : list){
+			set.add(m.getFromClass());
+		}
+		CommonResponseBase ret = new CommonResponseBase();
+		ret.setSet(set);
+	    return ret;
+    }
 	
 }

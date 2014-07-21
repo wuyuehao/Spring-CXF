@@ -99,8 +99,8 @@ public class CodeGen {
 						log.error("Not able to handle type = " + type);
 					}
 				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					log.debug("ClassNotFoundException. Skipped type = " + type);
+					continue;
 				}
 			}
 			feeder.put(key, value);
@@ -124,8 +124,8 @@ public class CodeGen {
 	            	value = value + "()";
 	            }
             } catch (ClassNotFoundException e) {
-	            // TODO Auto-generated catch block
-	            e.printStackTrace();
+	            log.debug("ClassNotFoundException. Skipped type = " + type);
+				continue;
             }
 			
 			assertions.put(key, value);

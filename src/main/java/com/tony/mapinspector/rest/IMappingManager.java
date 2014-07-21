@@ -1,6 +1,7 @@
 package com.tony.mapinspector.rest;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
@@ -20,6 +21,12 @@ import com.tony.mapinspector.entity.Mapping;
 
 @Path("mapping/")
 public interface IMappingManager {
+	
+	@GET
+	@Path("/from_class")
+	@Produces({ MediaType.APPLICATION_JSON })
+	public CommonResponseBase readUniqueFromClass(
+			@Context HttpServletResponse response);
 
 	@GET
 	@Path("/class/{classname}")

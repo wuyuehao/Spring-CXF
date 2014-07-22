@@ -66,6 +66,7 @@ public class CodeGen {
 		String toClass = mapping.getToClass();
 		List<Pair> pairs = mapping.getPairs();
 		mapperModelInit(mapperModel, fromClass, toClass);
+		mapperModel.put("package", mapping.getPkg4UT());
 
 		mapperModel.put(
 		        "nestedObjects",
@@ -201,6 +202,7 @@ public class CodeGen {
 		String toClass = mapping.getToClass();
 		List<Pair> pairs = mapping.getPairs();
 		mapperModelInit(mapperModel, fromClass, toClass);
+		mapperModel.put("package", mapping.getPkg4Code());
 
 		// generate code for nested VOs
 		Class c = null;
@@ -270,7 +272,6 @@ public class CodeGen {
 		        + "VO");
 		mapperModel.put("fromClassVarName",
 		        getVarName(getSimpleName(fromClass)));
-		mapperModel.put("package", props.get("package"));
 	}
 
 	private StringWriter constructMappings(Configuration cfg, String fromClass,

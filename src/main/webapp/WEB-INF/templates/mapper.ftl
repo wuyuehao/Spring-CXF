@@ -10,7 +10,7 @@ import ${fromClass};
 import ${toClass};
 
 @Component
-public class ${fromClassName}MapperGen{
+public class ${fromClassName}Mapper{
 
     public ${toClassName} map(${fromClassName} ${fromClassVarName}){
         ${toClassName} ${toClassVarName} = new ${toClassName}();

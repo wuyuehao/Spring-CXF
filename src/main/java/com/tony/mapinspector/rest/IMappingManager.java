@@ -21,43 +21,51 @@ import com.tony.mapinspector.entity.Mapping;
 
 @Path("mapping/")
 public interface IMappingManager {
-	
+
 	@GET
 	@Path("/from_class")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public CommonResponseBase readUniqueFromClass(
-			@Context HttpServletResponse response);
+	        @Context HttpServletResponse response);
 
 	@GET
 	@Path("/class/{classname}")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public List<LightMapping> readAll(@PathParam("classname") String className,
-			@Context HttpServletResponse response);
+	public List<LightMapping> readByClassName(
+	        @PathParam("classname") String className,
+	        @Context HttpServletResponse response);
 
 	@GET
 	@Path("/{id}")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public Mapping read(@PathParam("id") Long id,
-			@Context HttpServletResponse response);
+	        @Context HttpServletResponse response);
+
+	@GET
+	@Path("/")
+	@Produces({ MediaType.APPLICATION_JSON })
+	public List<LightMapping> readAll(@Context HttpServletResponse response);
 
 	@POST
 	@Path("/")
 	@Consumes({ MediaType.APPLICATION_JSON })
-	public CommonResponseBase create(Mapping mapping, @Context HttpServletResponse response);
+	public CommonResponseBase create(Mapping mapping,
+	        @Context HttpServletResponse response);
 
 	@PUT
 	@Path("/{id}")
 	@Consumes({ MediaType.APPLICATION_JSON })
 	public String update(@PathParam("id") Long id, Mapping mapping,
-			@Context HttpServletResponse response);
+	        @Context HttpServletResponse response);
 
 	@PATCH
 	@Path("/{id}")
 	@Consumes({ MediaType.APPLICATION_JSON })
 	public String patch(@PathParam("id") Long id,
-			@QueryParam("key") String key, @QueryParam("value") String value,
-			@QueryParam("type") String type, @QueryParam("to_type") String toType,
-			@DefaultValue("false") @QueryParam("remove") Boolean remove,
-			@Context HttpServletResponse response);
+	        @QueryParam("key") String key, @QueryParam("value") String value,
+	        @QueryParam("type") String type,
+	        @QueryParam("to_type") String toType,
+	        @DefaultValue("false") @QueryParam("remove") Boolean remove,
+	        @Context HttpServletResponse response);
 
 }

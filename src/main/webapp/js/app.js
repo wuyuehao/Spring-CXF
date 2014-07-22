@@ -256,6 +256,7 @@ var ModalInstanceCtrl = function($scope, $modalInstance, items) {
 
 		client.on('aftercopy', function(event) {
 			console.log('Copied text to clipboard');
+			alert('Copied text to clipboard');
 		});
 	});
 

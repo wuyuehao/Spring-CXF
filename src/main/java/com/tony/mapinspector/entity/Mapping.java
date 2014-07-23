@@ -30,6 +30,26 @@ public class Mapping implements Serializable {
 	private String toClass;
 
 	private Date lastUpdated;
+	
+	private String pkg4Code;
+	
+	private String pkg4UT;
+
+	public String getPkg4Code() {
+		return pkg4Code;
+	}
+
+	public void setPkg4Code(String pkg4Code) {
+		this.pkg4Code = pkg4Code;
+	}
+
+	public String getPkg4UT() {
+		return pkg4UT;
+	}
+
+	public void setPkg4UT(String pkg4ut) {
+		pkg4UT = pkg4ut;
+	}
 
 	private HashMap<String, String> varNames = new HashMap<String, String>();
 

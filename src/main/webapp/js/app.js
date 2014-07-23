@@ -1,26 +1,29 @@
-var app = angular.module('myApp', ['ui.bootstrap']);
+var app = angular.module('myApp', [ 'ui.bootstrap', 'toggle-switch' ]);
 
 function mapCtrl($scope, $modal, $http, $log) {
-	
-	$scope.from_class = "com.paypal.api.platform.riskprofileapi.IdentityProfileDecisionRequest";
+	$scope.from_class;
 
 	$scope.mapping = [];
 	$scope.to_class;
 	$scope.mappingRight = [];
 	$scope.mappings = [];
 	$scope.currentMap;
-	$scope.guessStatus = "Guess On";
-	$scope.guessClass = "btn btn-success";
-	
-	$scope.guessOnOff = function() {
-		if($scope.guessStatus == "Guess On"){
-			$scope.guessStatus = "Guess Off";
-			$scope.guessClass = "btn btn-default";
-		}else{
-			$scope.guessStatus = "Guess On";
-			$scope.guessClass = "btn btn-success";
-		}
+	$scope.guessStatus = true;
+	$scope.from_classes;
+
+	$scope.init = function() {
+		var httpRequest = $http({
+			method : 'GET',
+			url : '/rs/mapping/from_class/',
+			contentType : "application/json",
+			accepts : "application/json"
+		}).success(function(data, status) {
+			$scope.from_classes = data.set;
+			// $scope.from_class = $scope.from_classes[0];
+		});
 	}
+
+	$scope.init();
 
 	$scope.setSelected = function() {
 		$scope.selected = this.item;
@@ -28,11 +31,12 @@ function mapCtrl($scope, $modal, $http, $log) {
 			obj.highlight_class = "";
 		});
 		$scope.selected.highlight_class = "info";
-		if ($scope.guessStatus == "Guess On") {
+		if ($scope.guessStatus) {
 			if (this.item.mapto) {
 				$scope.searchTextRight = this.item.mapto;
 			} else {
-				$scope.searchTextRight = this.item.name;
+				$scope.searchTextRight = this.item.name
+						.substring(this.item.name.lastIndexOf("."));
 			}
 		}
 		console.log($scope.selected);
@@ -68,7 +72,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 		}
 	};
 
-	$scope.loadMappings = function() {
+	$scope.loadMappings = function(id) {
 		var httpRequest = $http({
 			method : 'GET',
 			url : '/rs/mapping/class/' + $scope.from_class,
@@ -76,7 +80,15 @@ function mapCtrl($scope, $modal, $http, $log) {
 			accepts : "application/json"
 		}).success(function(data, status) {
 			$scope.mappings = data;
-			$scope.currentMap = data[data.length - 1];
+			angular.forEach(data, function(obj) {
+				// console.log(obj.id + "==?"+ id);
+				if (obj.id == id) {
+					$scope.currentMap = obj;
+				}
+			});
+			if (id == 0) {
+				$scope.currentMap = data[data.length - 1];
+			}
 		});
 	};
 
@@ -84,7 +96,9 @@ function mapCtrl($scope, $modal, $http, $log) {
 		if (!id) {
 			id = 0;
 		}
-		console.log('/rs/inspector/data/'+$scope.from_class + "?map_id=" + id);
+		console
+				.log('/rs/inspector/data/' + $scope.from_class + "?map_id="
+						+ id);
 		var httpRequest = $http({
 			method : 'GET',
 			url : '/rs/inspector/data/' + $scope.from_class + "?map_id=" + id,
@@ -104,7 +118,9 @@ function mapCtrl($scope, $modal, $http, $log) {
 			});
 			$scope.to_class = data.to_class;
 			$scope.getDataRight(id);
-			$scope.loadMappings();
+			$scope.loadMappings(id);
+			$scope.searchText = "";
+			$scope.searchTextRight = "";
 		});
 	};
 
@@ -189,7 +205,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 			$scope.open('lg', data);
 		});
 	};
-	
+
 	$scope.genTest = function() {
 		var url = '/rs/testgen/' + $scope.currentMap.id;
 		var httpRequest = $http({
@@ -202,38 +218,60 @@ function mapCtrl($scope, $modal, $http, $log) {
 			$scope.open('lg', data);
 		});
 	};
-	
-	
-	 $scope.open = function (size, data) {
-		    var modalInstance = $modal.open({
-		      templateUrl: 'myModalContent.html',
-		      controller: ModalInstanceCtrl,
-		      size: size,
-		      resolve: {
-		        items: function () {
-		          return data;
-		        }
-		      }
-		    });
 
-		    modalInstance.result.then(function (selectedItem) {
-		      $scope.selected = selectedItem;
-		    }, function () {
-		      $log.info('Modal dismissed at: ' + new Date());
-		    });
-		  };
+	$scope.open = function(size, data) {
+		var modalInstance = $modal.open({
+			templateUrl : 'myModalContent.html',
+			controller : ModalInstanceCtrl,
+			size : size,
+			resolve : {
+				items : function() {
+					return data;
+				}
+			}
+		});
+
+		modalInstance.result.then(function(selectedItem) {
+			$scope.selected = selectedItem;
+		}, function() {
+			$log.info('Modal dismissed at: ' + new Date());
+		});
+	};
 
 }
 
-var ModalInstanceCtrl = function ($scope, $modalInstance, items) {
+var ModalInstanceCtrl = function($scope, $modalInstance, items) {
 
-	  $scope.gencode = items;
+	$scope.gencode = items;
+	
+	var clippedEl = document.getElementById("copy-button");
+	var client = new ZeroClipboard(clippedEl);
+	client.on('ready', function(event) {
+		console.log('movie is loaded');
 
-	  $scope.ok = function () {
-	    $modalInstance.close($scope.selected.item);
-	  };
+		client.on('copy', function(event) {
+			event.clipboardData.setData('text/plain', "test");
+			console.log('data is set');
+		});
 
-	  $scope.cancel = function () {
-	    $modalInstance.dismiss('cancel');
-	  };
+		client.on('aftercopy', function(event) {
+			console.log('Copied text to clipboard');
+			alert('Copied text to clipboard');
+		});
+	});
+
+	client.on('error', function(event) {
+		 console.log('ZeroClipboard error of type "' + event.name + '": '
+				+ event.message);
+		ZeroClipboard.destroy();
+	});
+
+	$scope.ok = function() {
+		client.clip(document.getElementById("copy-button"));
 	};
+
+	$scope.cancel = function() {
+		$modalInstance.dismiss('cancel');
+	};
+};
+

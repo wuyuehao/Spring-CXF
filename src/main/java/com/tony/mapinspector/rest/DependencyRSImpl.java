@@ -12,8 +12,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.ebay.af.common.types.Currency;
-import com.paypal.vo.VOEnum;
 import com.tony.mapinspector.dao.MappingDao;
 import com.tony.mapinspector.entity.Mapping;
 import com.tony.mapinspector.entity.Pair;

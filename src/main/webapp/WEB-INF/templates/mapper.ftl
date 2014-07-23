@@ -1,16 +1,16 @@
-/* This is a generated class */
+/*
+ * This is a generated class 
+ */
 
 package ${package};
 
 import org.springframework.stereotype.Component;
-import com.paypal.types.Currency;
-import com.paypal.types.Currency.Info;
 
 import ${fromClass};
 import ${toClass};
 
 @Component
-public class ${fromClassName}MapperGen{
+public class ${fromClassName}Mapper{
 
     public ${toClassName} map(${fromClassName} ${fromClassVarName}){
         ${toClassName} ${toClassVarName} = new ${toClassName}();
@@ -22,7 +22,7 @@ public class ${fromClassName}MapperGen{
         return ${toClassVarName};
     }
     
-    private Currency getCurrency(
+    /*private Currency getCurrency(
             com.paypal.api.platform.riskprofileapi.Currency currency) {
         if (currency == null) {
             return null;
@@ -34,6 +34,6 @@ public class ${fromClassName}MapperGen{
         }
         return new Currency(Info.getInstance(isoCode),
                 Double.parseDouble(value));
-    }
+    }*/
 
 }

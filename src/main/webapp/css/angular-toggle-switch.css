@@ -1,11 +1,13 @@
 .switch {
     border: 1px solid;
+    border-radius: 4px;
+    display: inline-block;
     cursor: pointer;
     display: inline-block;
     text-align: left;
     overflow: hidden;
     line-height: 8px;
-    min-width: 100px;
+    min-width: 120px;
 }
 
 .switch.disabled > div > span.knob {
@@ -16,7 +18,7 @@
     cursor: pointer;
     display: inline-block;
     float: left;
-    height: 24;
+    height: 28;
     line-height: 20px;
     padding: 4px;
     text-align: center;

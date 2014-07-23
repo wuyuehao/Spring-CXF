@@ -3,11 +3,11 @@ package com.tony.mapinspector.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -26,7 +26,6 @@ import com.tony.mapinspector.dao.MappingDao;
 import com.tony.mapinspector.entity.Mapping;
 import com.tony.mapinspector.entity.Pair;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
 import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Template;
@@ -67,6 +66,7 @@ public class CodeGen {
 		String toClass = mapping.getToClass();
 		List<Pair> pairs = mapping.getPairs();
 		mapperModelInit(mapperModel, fromClass, toClass);
+		mapperModel.put("package", mapping.getPkg4UT());
 
 		mapperModel.put(
 		        "nestedObjects",
@@ -80,7 +80,7 @@ public class CodeGen {
 		for (Pair p : pairs) {
 			String key = Util.getSetterById(p.getName());
 			String type = p.getType();
-			String value = null;
+			String value = ""+count;
 			if (type.equals("java.util.Date")) {
 				value = "new java.util.Date(" + Util.nextLong(4294967295L)
 				        + "L)";
@@ -100,8 +100,8 @@ public class CodeGen {
 						log.error("Not able to handle type = " + type);
 					}
 				} catch (ClassNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					log.debug("ClassNotFoundException. Skipped type = " + type);
+					continue;
 				}
 			}
 			feeder.put(key, value);
@@ -125,8 +125,8 @@ public class CodeGen {
 	            	value = value + "()";
 	            }
             } catch (ClassNotFoundException e) {
-	            // TODO Auto-generated catch block
-	            e.printStackTrace();
+	            log.debug("ClassNotFoundException. Skipped type = " + type);
+				continue;
             }
 			
 			assertions.put(key, value);
@@ -202,6 +202,7 @@ public class CodeGen {
 		String toClass = mapping.getToClass();
 		List<Pair> pairs = mapping.getPairs();
 		mapperModelInit(mapperModel, fromClass, toClass);
+		mapperModel.put("package", mapping.getPkg4Code());
 
 		// generate code for nested VOs
 		Class c = null;
@@ -271,7 +272,6 @@ public class CodeGen {
 		        + "VO");
 		mapperModel.put("fromClassVarName",
 		        getVarName(getSimpleName(fromClass)));
-		mapperModel.put("package", props.get("package"));
 	}
 
 	private StringWriter constructMappings(Configuration cfg, String fromClass,

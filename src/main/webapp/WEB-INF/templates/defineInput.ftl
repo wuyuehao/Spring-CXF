@@ -1,2 +1,4 @@
-${className} ${varName} = ${parentVarName}.${getMethodName}();
-if(null != ${varName}) { 
+    ${className} ${varName} = ${parentVarName}.${getMethodName}();
+
+    if(null != ${varName}) { 
+

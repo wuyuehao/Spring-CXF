@@ -10,7 +10,7 @@ import java.util.*;
 import ${fromClass};
 import ${toClass};
 
-public class ${fromClassName}MapperGenTest{
+public class ${fromClassName}MapperTest{
 
 
     @Test
@@ -22,7 +22,7 @@ public class ${fromClassName}MapperGenTest{
         
         feed(${fromClassVarName});
         
-        ${fromClassName}MapperGen mapper = new ${fromClassName}MapperGen();
+        ${fromClassName}Mapper mapper = new ${fromClassName}Mapper();
         
         verify(${fromClassVarName} , mapper.map(${fromClassVarName}));
         

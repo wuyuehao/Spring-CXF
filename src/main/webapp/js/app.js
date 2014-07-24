@@ -96,15 +96,15 @@ function mapCtrl($scope, $modal, $http, $log) {
 		if (!id) {
 			id = 0;
 		}
-		console
-				.log('/rs/inspector/data/' + $scope.from_class + "?map_id="
-						+ id);
+		var url = '/rs/inspector/data/' + $scope.from_class + "?map_id="+ id;
+		console.log(url);
 		var httpRequest = $http({
 			method : 'GET',
-			url : '/rs/inspector/data/' + $scope.from_class + "?map_id=" + id,
+			url : url,
 			contentType : "application/json",
 			accepts : "application/json"
 		}).success(function(data, status) {
+			console.log("get response:" + data);
 			$scope.mapping = data.mapping;
 			angular.forEach($scope.mapping, function(obj) {
 				if (obj.mapto != undefined) {
@@ -117,6 +117,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 
 			});
 			$scope.to_class = data.to_class;
+			console.log("setting up to class: " +$scope.to_class);
 			$scope.getDataRight(id);
 			$scope.loadMappings(id);
 			$scope.searchText = "";

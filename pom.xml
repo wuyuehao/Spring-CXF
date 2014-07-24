@@ -237,12 +237,6 @@
 			<groupId>com.paypal.risk.userverification</groupId>
 			<artifactId>domain-verification</artifactId>
 			<version>1.7.2</version>
-			<exclusions>
-				<exclusion>
-					<groupId>*</groupId>
-					<artifactId>*</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.paypal.risk.userverification.services.internal</groupId>

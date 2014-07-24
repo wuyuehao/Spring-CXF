@@ -89,6 +89,7 @@ function mapCtrl($scope, $modal, $http, $log) {
 			if (id == 0) {
 				$scope.currentMap = data[data.length - 1];
 			}
+			$scope.getDataRight($scope.currentMap.id);
 		});
 	};
 
@@ -118,7 +119,6 @@ function mapCtrl($scope, $modal, $http, $log) {
 			});
 			$scope.to_class = data.to_class;
 			console.log("setting up to class: " +$scope.to_class);
-			$scope.getDataRight(id);
 			$scope.loadMappings(id);
 			$scope.searchText = "";
 			$scope.searchTextRight = "";
@@ -251,7 +251,7 @@ var ModalInstanceCtrl = function($scope, $modalInstance, items) {
 		console.log('movie is loaded');
 
 		client.on('copy', function(event) {
-			event.clipboardData.setData('text/plain', "test");
+			event.clipboardData.setData('text/plain', $scope.gencode);
 			console.log('data is set');
 		});
 

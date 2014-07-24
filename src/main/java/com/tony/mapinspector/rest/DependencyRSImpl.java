@@ -7,6 +7,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.log4j.Logger;
+import org.eclipse.jetty.server.Response;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,7 +29,8 @@ public class DependencyRSImpl implements DependencyRS {
 		try {
 			c = Class.forName(className);
 		} catch (ClassNotFoundException e) {
-			return "class not found";
+			response.setStatus(Response.SC_INTERNAL_SERVER_ERROR);
+			return "{\"error\" : \"" + className + "class not found\"";
 		}
 
 		JSONArray ret = new JSONArray();
